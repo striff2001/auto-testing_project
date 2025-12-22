@@ -1,23 +1,31 @@
-package ru.mobile;
+package ru.wikipedia.tests.mobile;
 
 import io.appium.java_client.android.AndroidDriver;
+import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import ru.pages.WikipediaAppPage;
-import ru.utils.WebDriverFactory;
+import ru.wikipedia.pages.mobile.WikipediaMobileMainPage;
+import ru.wikipedia.utils.DriverFactory;
+
+import java.time.Duration;
 
 public class WikipediaMobileTests {
 
     private AndroidDriver driver;
-    private WikipediaAppPage appPage;
+    private WikipediaMobileMainPage appPage;
+    private WebDriverWait wait;
 
     @BeforeMethod
     public void setup() throws Exception {
-        driver = WebDriverFactory.createAndroidDriver();
-        appPage = new WikipediaAppPage(driver);
-        Thread.sleep(3000);
+        driver = DriverFactory.createAndroidDriver();
+        appPage = new WikipediaMobileMainPage(driver);
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        // Ждем загрузки основного экрана
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("org.wikipedia.alpha:id/search_container")));
     }
 
     @AfterMethod
@@ -35,9 +43,8 @@ public class WikipediaMobileTests {
     }
 
     @Test(priority = 2)
-    public void testSearchAndOpenArticle() throws InterruptedException {
+    public void testSearchAndOpenArticle() {
         appPage.searchForArticle("Appium");
-        Thread.sleep(3000);
 
         String title = appPage.getArticleTitle();
         System.out.println("Заголовок статьи: '" + title + "'");
@@ -48,38 +55,15 @@ public class WikipediaMobileTests {
     }
 
     @Test(priority = 3)
-    public void testSearchAndNavigateBack() throws InterruptedException {
+    public void testSearchAndNavigateBack() {
         appPage.searchForArticle("Selenium");
-        Thread.sleep(3000);
 
         String title = appPage.getArticleTitle();
         System.out.println("Открыта статья: " + title);
 
         appPage.navigateBack();
-        Thread.sleep(2000);
 
         boolean isDisplayed = appPage.isSearchContainerDisplayed();
         Assert.assertTrue(isDisplayed, "После возврата должно быть видно поле поиска");
     }
 }
-
-
-//@Test для поиска ID
-//public void testFindRealElements() throws InterruptedException {
-//    Thread.sleep(15000);
-//
-//    String source = driver.getPageSource();
-//    System.out.println("=== PAGE SOURCE ===");
-//    System.out.println(source.substring(0, Math.min(2000, source.length())));
-//
-//    System.out.println("\n=== ALL ELEMENTS ===");
-//    var elements = driver.findElements(By.xpath("//*"));
-//    for (var el : elements) {
-//        String id = el.getAttribute("resource-id");
-//        String text = el.getText();
-//        String className = el.getAttribute("class");
-//        if (id != null && !id.isEmpty()) {
-//            System.out.println("ID: " + id + " | Class: " + className + " | Text: " + text);
-//        }
-//    }
-//}

@@ -1,4 +1,4 @@
-package ru.pages;
+package ru.wikipedia.pages.web;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -8,7 +8,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
-public class WikipediaPage {
+public class WikipediaMainPage {
 
     private final WebDriver driver;
     private final WebDriverWait wait;
@@ -20,7 +20,7 @@ public class WikipediaPage {
     private final By RANDOM_PAGE_LINK = By.id("n-randompage");
     private final By BODY_CONTENT = By.id("bodyContent");
 
-    public WikipediaPage(WebDriver driver) {
+    public WikipediaMainPage(WebDriver driver) {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
@@ -28,8 +28,10 @@ public class WikipediaPage {
     public boolean isMainPageContentDisplayed() {
         driver.get(BASE_URL);
         try {
+            // Ожидаем появления логотипа и основного контента
             wait.until(ExpectedConditions.visibilityOfElementLocated(WIKI_LOGO));
-            return wait.until(ExpectedConditions.visibilityOfElementLocated(BODY_CONTENT)).isDisplayed();
+            WebElement bodyContent = wait.until(ExpectedConditions.visibilityOfElementLocated(BODY_CONTENT));
+            return bodyContent.isDisplayed();
         } catch (Exception e) {
             return false;
         }
