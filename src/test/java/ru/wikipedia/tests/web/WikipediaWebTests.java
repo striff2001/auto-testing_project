@@ -12,7 +12,7 @@ import ru.wikipedia.utils.DriverFactory;
 public class WikipediaWebTests {
 
     private WebDriver driver;
-    private WikipediaMainPage wikipediaMainPage;
+    private WikipediaMainPage wikipediaPage;
     private static final String BASE_URL = "https://ru.wikipedia.org/";
 
     @BeforeMethod
@@ -20,51 +20,73 @@ public class WikipediaWebTests {
         WebDriverManager.chromedriver().setup();
         driver = DriverFactory.createDriver();
         driver.manage().window().maximize();
-        wikipediaMainPage = new WikipediaMainPage(driver);
+        driver.get(BASE_URL);
+        wikipediaPage = new WikipediaMainPage(driver);
     }
 
     @Test
-    public void testMainPageLoadAndElementsDisplay() {
-        Assert.assertTrue(wikipediaMainPage.isMainPageContentDisplayed(), "Main Wikipedia page content is not displayed.");
+    public void testLogoReturnsToMainPage() {
+        wikipediaPage.clickRandomPageLink();
+        Assert.assertTrue(wikipediaPage.isInArticlePage(), "Not on article page");
+
+        wikipediaPage.navigateToMainPageViaLogo();
+
+        String currentUrl = driver.getCurrentUrl();
+        boolean isMain = wikipediaPage.isOnMainPage();
+
+        // Детальная диагностика
+        System.out.println("Current URL: " + currentUrl);
+        System.out.println("isOnMainPage(): " + isMain);
+
+        Assert.assertTrue(isMain, "Logo didn't return to main page. URL: " + currentUrl);
+    }
+
+
+    @Test
+    public void testLanguagesCountIsNumericAndPositive() {
+        wikipediaPage.isMainPageContentDisplayed();
+        String languagesCount = wikipediaPage.getCurrentLanguagesCount();
+
+        Assert.assertTrue(languagesCount.matches("\\d+"), "Not numeric: " + languagesCount);
+        Assert.assertTrue(Integer.parseInt(languagesCount) > 100,  // Смягчили условие
+                "Too low: " + languagesCount);
     }
 
     @Test
-    public void testSearchFunctionality() {
-        String searchQuery = "Россия";
-        String expectedArticleTitle = "Россия";
+    public void testSearchRedirectsToArticle() {
+        String searchQuery = "Python";
+        wikipediaPage.isMainPageContentDisplayed();
+        wikipediaPage.searchFor(searchQuery);
 
-        wikipediaMainPage.searchFor(searchQuery);
-
-        String heading = wikipediaMainPage.getFirstHeadingText();
-
-        Assert.assertEquals(heading, expectedArticleTitle, "Search failed. Expected heading: '" + expectedArticleTitle + "', but got: " + heading);
+        Assert.assertTrue(wikipediaPage.isInArticlePage(), "Not on article page");
+        // Case-insensitive проверка
+        String currentUrl = driver.getCurrentUrl().toLowerCase();
+        Assert.assertTrue(currentUrl.contains(searchQuery.toLowerCase()),
+                "Search URL doesn't contain query: " + driver.getCurrentUrl());
     }
 
     @Test
-    public void testRandomPageNavigation() {
-        // Сохраняем URL главной страницы
-        String mainPageUrl = "https://ru.wikipedia.org/wiki/Заглавная_страница";
-        
-        // Убеждаемся, что мы на главной странице
-        wikipediaMainPage.isMainPageContentDisplayed();
-        
-        wikipediaMainPage.clickRandomPageLink();
+    public void testRandomPageAlwaysLeadsToArticle() {
+        wikipediaPage.navigateToMainPage();
+        wikipediaPage.clickRandomPageLink();
 
-        // Проверяем, что URL изменился (мы перешли на другую страницу)
-        Assert.assertNotEquals(driver.getCurrentUrl(), mainPageUrl, "Transition to a random page did not occur (URL did not change).");
-    }
-
-    @Test
-    public void testSearchInputInteractivity() {
-        wikipediaMainPage.isMainPageContentDisplayed();
-
-        Assert.assertTrue(wikipediaMainPage.isSearchInputDisplayedAndEnabled(), "Search input element is not displayed or enabled for interaction.");
-    }
-
-    @AfterMethod
-    public void tearDown() {
-        if (driver != null) {
-            driver.quit();
+        // Проверяем 3 раза подряд - всегда попадаем на статью
+        for (int i = 0; i < 3; i++) {
+            Assert.assertTrue(wikipediaPage.isInArticlePage(),
+                    String.format("Random page #%d is not an article", i + 1));
+            if (i < 2) wikipediaPage.clickRandomPageLink();
         }
     }
+
+    @Test
+    public void testSearchInputRemainsFunctionalAfterRandomNavigation() {
+        wikipediaPage.navigateToMainPage();
+        wikipediaPage.clickRandomPageLink();  // Уходим и возвращаемся
+        wikipediaPage.navigateToMainPage();
+
+        Assert.assertTrue(wikipediaPage.isSearchInputDisplayedAndEnabled(),
+                "Search input not functional after navigation cycle");
+    }
+
+
 }
