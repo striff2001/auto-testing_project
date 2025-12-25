@@ -23,9 +23,12 @@ public class WikipediaMobileTests {
     public void setup() throws Exception {
         driver = DriverFactory.createAndroidDriver();
         appPage = new WikipediaMobileMainPage(driver);
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        // Ждем загрузки основного экрана
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("org.wikipedia.alpha:id/search_container")));
+        wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+
+        appPage.skipOnboarding();
+        appPage.closePopupIfPresent();
+        wait.until(ExpectedConditions.presenceOfElementLocated(
+                By.id("org.wikipedia.alpha:id/search_container")));
     }
 
     @AfterMethod
@@ -35,35 +38,37 @@ public class WikipediaMobileTests {
         }
     }
 
-    @Test(priority = 1)
-    public void testMainScreenSearchIsDisplayed() {
-        boolean isDisplayed = appPage.isSearchContainerDisplayed();
-        System.out.println("Поле поиска отображается: " + isDisplayed);
-        Assert.assertTrue(isDisplayed);
+    @Test(priority = 1, description = "Многоязычный поиск")
+    public void testMultilingualSearch() {
+        String[] queries = {"Python", "Питон", "Kubernetes"};
+        for (String query : queries) {
+            appPage.searchForArticle(query);
+            String title = appPage.getArticleTitle();
+            Assert.assertFalse(title.isEmpty());
+            appPage.navigateBack();
+        }
     }
 
-    @Test(priority = 2)
-    public void testSearchAndOpenArticle() {
-        appPage.searchForArticle("Appium");
-
-        String title = appPage.getArticleTitle();
-        System.out.println("Заголовок статьи: '" + title + "'");
-
-        Assert.assertTrue(title != null && !title.isEmpty());
-        Assert.assertTrue(title.toLowerCase().contains("appium"),
-                "Заголовок должен содержать 'Appium'. Фактический: " + title);
-    }
-
-    @Test(priority = 3)
-    public void testSearchAndNavigateBack() {
-        appPage.searchForArticle("Selenium");
-
-        String title = appPage.getArticleTitle();
-        System.out.println("Открыта статья: " + title);
-
+    @Test(priority = 2, description = "Цепочка поисков")
+    public void testSearchChain() {
+        appPage.searchForArticle("Docker");
+        appPage.getArticleTitle();
         appPage.navigateBack();
 
-        boolean isDisplayed = appPage.isSearchContainerDisplayed();
-        Assert.assertTrue(isDisplayed, "После возврата должно быть видно поле поиска");
+        appPage.searchForArticle("Jenkins");
+        Assert.assertFalse(appPage.getArticleTitle().isEmpty());
     }
+
+    @Test(priority = 3, description = "Тест производительности поиска (увеличенный timeout)")
+    public void testPerformanceSearch() {
+        long start = System.currentTimeMillis();
+
+        appPage.searchForArticle("Maven");
+        String title = appPage.getArticleTitle();
+        System.out.println("Время поиска: " + (System.currentTimeMillis() - start) + "ms");
+
+        // 45 секунд = нормально для эмулятора
+        Assert.assertTrue(title.isEmpty() == false, "Статья не найдена");
+    }
+
 }

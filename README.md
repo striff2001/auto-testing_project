@@ -90,6 +90,12 @@ emulator -avd Pixel_5
 adb -s emulator-5554 install app-alpha-universal-release.apk
 ```
 
+После запуска устройства через IDE
+смотрим, что оно доступно
+adb devices
+устанавливаем приложение
+adb install -r app-alpha-universal-release.apk
+
 3. **Запуск Appium сервера** на порту 4723:
 
 ```bash
